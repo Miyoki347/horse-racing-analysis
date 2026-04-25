@@ -1,6 +1,6 @@
 'use client'
 import { useState, useCallback } from 'react'
-import Link from 'next/link'
+import { SiteHeader } from '@/components/SiteHeader'
 import { HorseSearch } from '@/components/HorseSearch'
 import { ConditionSelector } from '@/components/ConditionSelector'
 import { HistoryBasedRanking } from '@/components/HistoryBasedRanking'
@@ -128,15 +128,7 @@ export default function SimulatePage() {
 
         {/* ヘッダー・ナビ */}
         <div>
-          <div className="mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">🏇 競馬AI分析</h1>
-            <p className="mt-1 text-sm text-gray-500">JRA重賞データに基づくデータサイエンス指向の展開分析</p>
-          </div>
-          <div className="flex gap-2 mb-4">
-            <Link href="/"        className="px-4 py-2 rounded-full text-sm font-medium bg-white border border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 transition-colors">過去レース</Link>
-            <Link href="/upcoming" className="px-4 py-2 rounded-full text-sm font-medium bg-white border border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 transition-colors">🗓️ 出走予定</Link>
-            <span className="px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white">🔬 シミュレーター</span>
-          </div>
+          <SiteHeader active="simulate" />
           <h2 className="text-xl font-bold text-gray-900">カスタムレースシミュレーター</h2>
           <p className="text-sm text-gray-500 mt-1">好きな馬を選んで、条件を設定して予測する</p>
         </div>
