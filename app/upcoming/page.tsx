@@ -1,22 +1,28 @@
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { GradeBadge } from '@/components/GradeBadge'
-import type { Race } from '@/types/race'
+import type { UpcomingEntry } from '@/types/upcoming'
 
-const TRACK_CONDITION = ['良', '稍重', '重', '不良']
+async function getUpcomingRaces() {
+  const { data } = await supabase
+    .from('upcoming_entries')
+    .select('netkeiba_race_id, race_name, race_date, course, distance, track_type, grade')
+    .order('race_date', { ascending: true })
 
-async function getRaces(): Promise<Race[]> {
-  const { data, error } = await supabase
-    .from('races')
-    .select('*')
-    .order('date', { ascending: false })
-    .limit(100)
-  if (error) { console.error(error); return [] }
-  return data ?? []
+  if (!data) return []
+
+  // race_idでユニーク化
+  const seen = new Set<string>()
+  return data.filter((r: Partial<UpcomingEntry>) => {
+    if (seen.has(r.netkeiba_race_id!)) return false
+    seen.add(r.netkeiba_race_id!)
+    return true
+  })
 }
 
-export default async function HomePage() {
-  const races = await getRaces()
+export default async function UpcomingPage() {
+  const races = await getUpcomingRaces()
+
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-6">
@@ -27,28 +33,35 @@ export default async function HomePage() {
 
         {/* ナビゲーション */}
         <div className="flex gap-2 mb-6">
-          <span className="px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white">
-            過去レース
-          </span>
           <Link
-            href="/upcoming"
+            href="/"
             className="px-4 py-2 rounded-full text-sm font-medium bg-white border border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
           >
-            🗓️ 出走予定
+            過去レース
           </Link>
+          <span className="px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white">
+            🗓️ 出走予定
+          </span>
         </div>
+
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-gray-800">出走予定レース</h2>
+          <p className="text-sm text-gray-500">過去データに基づく予測ランキング</p>
+        </div>
+
         {races.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <p className="text-4xl mb-4">📭</p>
-            <p>レースデータがまだありません。</p>
-            <p className="text-sm mt-2">スクレイパーを実行してデータを収集してください。</p>
+            <p>出走予定データがありません。</p>
+            <p className="text-sm mt-2 font-mono">python fetch_upcoming.py</p>
+            <p className="text-sm text-gray-400">を実行してデータを取得してください。</p>
           </div>
         ) : (
           <div className="space-y-3">
             {races.map((race) => (
               <Link
-                key={race.id}
-                href={`/race/${race.netkeiba_race_id}`}
+                key={race.netkeiba_race_id}
+                href={`/upcoming/${race.netkeiba_race_id}`}
                 className="block bg-white rounded-xl border border-gray-200 p-4 hover:border-indigo-300 hover:shadow-md transition-all active:scale-[0.99]"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -58,11 +71,9 @@ export default async function HomePage() {
                       <span className="font-semibold text-gray-900 truncate">{race.race_name}</span>
                     </div>
                     <div className="mt-1.5 flex items-center gap-3 text-xs text-gray-500 flex-wrap">
-                      <span>📅 {race.date}</span>
+                      <span>📅 {race.race_date}</span>
                       <span>📍 {race.course}</span>
                       <span>{race.track_type} {race.distance}m</span>
-                      <span>馬場:{TRACK_CONDITION[race.track_condition] ?? '良'}</span>
-                      {race.weather && <span>天候:{race.weather}</span>}
                     </div>
                   </div>
                   <span className="text-gray-400 text-lg flex-shrink-0">›</span>
