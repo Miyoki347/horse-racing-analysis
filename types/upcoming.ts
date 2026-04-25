@@ -20,6 +20,11 @@ export interface UpcomingEntry {
 export interface HorseWithHistory extends UpcomingEntry {
   avg_time_index: number | null
   best_time_index: number | null
+  rest_weeks: number | null
+  is_jockey_changed: boolean | null
+  jockey_course_win_rate: number | null
+  jockey_course_top3_rate: number | null
+  jockey_course_race_count: number | null
   recent_results: {
     date: string
     race_name: string

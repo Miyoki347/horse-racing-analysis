@@ -23,6 +23,18 @@ type HistoryRow = {
   races: RaceJoin
 }
 
+type LastRaceRow = {
+  horse_id: string
+  jockey_name: string | null
+  date: string
+}
+
+// 騎手名の同一判定（出馬表は略称のためプレフィックスで比較）
+function isSameJockey(a: string | null, b: string | null): boolean | null {
+  if (!a || !b) return null
+  return a.startsWith(b) || b.startsWith(a)
+}
+
 async function enrichWithHistory(entries: UpcomingEntry[]): Promise<HorseWithHistory[]> {
   const horseNames = entries.map((e) => e.horse_name)
 
@@ -32,17 +44,30 @@ async function enrichWithHistory(entries: UpcomingEntry[]): Promise<HorseWithHis
     .in('name', horseNames)
 
   if (!horseMaster || horseMaster.length === 0) {
-    return entries.map((e) => ({ ...e, avg_time_index: null, best_time_index: null, recent_results: [] }))
+    return entries.map((e) => ({
+      ...e,
+      avg_time_index: null, best_time_index: null,
+      rest_weeks: null, is_jockey_changed: null,
+      jockey_course_win_rate: null, jockey_course_top3_rate: null, jockey_course_race_count: null,
+      recent_results: [],
+    }))
   }
 
   const nameToId = Object.fromEntries(horseMaster.map((h: { name: string; id: string }) => [h.name, h.id]))
   const horseIds = horseMaster.map((h: { id: string }) => h.id)
 
-  const { data: rawResults } = await supabase
-    .from('race_results')
-    .select('horse_id, finish_position, time_index, last_3f_time, races(date, race_name, distance, track_type)')
-    .in('horse_id', horseIds)
-    .not('time_index', 'is', null)
+  // タイム指数履歴 + 全出走（最終騎手・日付取得用）を並行取得
+  const [{ data: rawResults }, { data: rawLatest }] = await Promise.all([
+    supabase
+      .from('race_results')
+      .select('horse_id, finish_position, time_index, last_3f_time, races(date, race_name, distance, track_type)')
+      .in('horse_id', horseIds)
+      .not('time_index', 'is', null),
+    supabase
+      .from('race_results')
+      .select('horse_id, jockeys(name), races(date)')
+      .in('horse_id', horseIds),
+  ])
 
   const results: HistoryRow[] = (rawResults ?? []).map((r) => ({
     horse_id:        r.horse_id as string,
@@ -51,6 +76,18 @@ async function enrichWithHistory(entries: UpcomingEntry[]): Promise<HorseWithHis
     last_3f_time:    r.last_3f_time as number | null,
     races:           r.races as unknown as RaceJoin,
   }))
+
+  // 馬ごとの最終出走情報（最新日付）
+  const latestMap = new Map<string, LastRaceRow>()
+  for (const r of rawLatest ?? []) {
+    const date       = (r.races as unknown as { date: string } | null)?.date ?? ''
+    const jockeyName = (r.jockeys as unknown as { name: string } | null)?.name ?? null
+    const horseId    = r.horse_id as string
+    const existing   = latestMap.get(horseId)
+    if (!existing || date > existing.date) {
+      latestMap.set(horseId, { horse_id: horseId, jockey_name: jockeyName, date })
+    }
+  }
 
   const historyMap: Record<string, HistoryRow[]> = {}
   for (const r of results) {
@@ -64,15 +101,30 @@ async function enrichWithHistory(entries: UpcomingEntry[]): Promise<HorseWithHis
   }
 
   return entries.map((entry) => {
-    const horseId = nameToId[entry.horse_name] as string | undefined
-    const history = horseId ? (historyMap[horseId] ?? []) : []
-    const indices = history.map((r) => r.time_index).filter((v): v is number => v != null)
+    const horseId  = nameToId[entry.horse_name] as string | undefined
+    const history  = horseId ? (historyMap[horseId] ?? []) : []
+    const indices  = history.map((r) => r.time_index).filter((v): v is number => v != null)
+    const lastRace = horseId ? latestMap.get(horseId) : null
+
+    // 休み明け週数
+    const restWeeks = lastRace?.date
+      ? Math.floor((new Date(entry.race_date).getTime() - new Date(lastRace.date).getTime()) / (7 * 24 * 60 * 60 * 1000))
+      : null
+
+    // 乗り替わり（名前の部分一致で同一騎手を判定）
+    const same = isSameJockey(lastRace?.jockey_name ?? null, entry.jockey_name)
+    const isJockeyChanged = same === null ? null : !same
 
     return {
       ...entry,
-      avg_time_index:  indices.length > 0 ? indices.reduce((s, v) => s + v, 0) / indices.length : null,
-      best_time_index: indices.length > 0 ? Math.max(...indices) : null,
-      recent_results:  history.map((r) => ({
+      avg_time_index:           indices.length > 0 ? indices.reduce((s, v) => s + v, 0) / indices.length : null,
+      best_time_index:          indices.length > 0 ? Math.max(...indices) : null,
+      rest_weeks:               restWeeks,
+      is_jockey_changed:        isJockeyChanged,
+      jockey_course_win_rate:   null,
+      jockey_course_top3_rate:  null,
+      jockey_course_race_count: null,
+      recent_results:    history.map((r) => ({
         date:            r.races?.date ?? '',
         race_name:       r.races?.race_name ?? '',
         finish_position: r.finish_position,

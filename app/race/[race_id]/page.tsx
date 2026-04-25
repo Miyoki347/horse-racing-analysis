@@ -5,6 +5,7 @@ import { GradeBadge } from '@/components/GradeBadge'
 import { HorseTable } from '@/components/HorseTable'
 import { TimeIndexChart } from '@/components/TimeIndexChart'
 import { AnalysisPanel } from '@/components/AnalysisPanel'
+import { PrecipitationBadge } from '@/components/PrecipitationBadge'
 import { PredictionRanking } from '@/components/PredictionRanking'
 import { TRACK_CONDITION_LABEL } from '@/types/race'
 
@@ -61,13 +62,21 @@ export default async function RaceDetailPage({ params }: PageProps) {
 
         {/* サマリーカード */}
         {winner && (
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
               { label: '1着', value: winner.horses?.name, sub: winner.jockeys?.name },
               { label: '勝ちタイム', value: winner.time_seconds
                   ? `${Math.floor(winner.time_seconds / 60)}:${(winner.time_seconds % 60).toFixed(1).padStart(4,'0')}`
                   : '-', sub: `上がり${winner.last_3f_time ?? '-'}秒` },
               { label: '平均タイム指数', value: avgIndex, sub: `出走${safeResults.length}頭` },
+              { label: '馬場差', value: race.track_bias_score != null
+                  ? `${race.track_bias_score > 0 ? '+' : ''}${race.track_bias_score.toFixed(2)}秒`
+                  : '-',
+                sub: race.track_bias_score != null
+                  ? race.track_bias_score > 0.5 ? '⚡ 速い馬場'
+                  : race.track_bias_score < -0.5 ? '🌧️ 遅い馬場'
+                  : '± 標準的な馬場'
+                  : '基準タイム未算出' },
             ].map(({ label, value, sub }) => (
               <div key={label} className="bg-white rounded-xl border border-gray-200 p-4 text-center">
                 <p className="text-xs text-gray-400 mb-1">{label}</p>
@@ -77,6 +86,15 @@ export default async function RaceDetailPage({ params }: PageProps) {
             ))}
           </div>
         )}
+
+        {/* 降水量・馬場データ */}
+        <PrecipitationBadge
+          precipMm={race.precipitation_mm}
+          prevDayMm={race.prev_day_precip_mm}
+          precip7dayMm={race.precip_7day_mm}
+          actualCondition={race.track_condition}
+          estimatedCondition={race.track_condition_est}
+        />
 
         {/* タイム指数チャート */}
         {safeResults.length > 0 && (

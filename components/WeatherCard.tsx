@@ -18,7 +18,7 @@ const WEATHER_ICON: Record<string, string> = {
 }
 
 export function WeatherCard({ weather }: Props) {
-  const { raceDay, prevDay, trackEstimate, trackNote, city } = weather
+  const { raceDay, prevDay, precip7dayMm, trackEstimate, trackNote, city } = weather
   const icon = WEATHER_ICON[raceDay.label] ?? '🌡️'
   const trackStyle = TRACK_COLOR[trackEstimate] ?? 'bg-gray-100 text-gray-800 border-gray-300'
 
@@ -50,20 +50,28 @@ export function WeatherCard({ weather }: Props) {
           </div>
         </div>
 
-        {/* 前日天気 */}
-        {prevDay && (
-          <div className="flex-1 bg-gray-50 rounded-xl p-4 opacity-75">
-            <p className="text-xs text-gray-400 mb-1">前日</p>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xl">{WEATHER_ICON[prevDay.label] ?? '🌡️'}</span>
-              <span className="text-sm text-gray-700">{prevDay.label}</span>
-            </div>
-            <div className="text-xs text-gray-600">
-              <span className="text-gray-400 block">降水量</span>
-              <span className="font-mono font-semibold">{prevDay.precipMm.toFixed(1)} mm</span>
-            </div>
+        {/* 前日 + 7日間累積 */}
+        <div className="flex-1 bg-gray-50 rounded-xl p-4 opacity-75">
+          <p className="text-xs text-gray-400 mb-1">前日</p>
+          {prevDay ? (
+            <>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl">{WEATHER_ICON[prevDay.label] ?? '🌡️'}</span>
+                <span className="text-sm text-gray-700">{prevDay.label}</span>
+              </div>
+              <div className="text-xs text-gray-600">
+                <span className="text-gray-400 block">降水量</span>
+                <span className="font-mono font-semibold">{prevDay.precipMm.toFixed(1)} mm</span>
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-gray-400">データなし</p>
+          )}
+          <div className="mt-2 text-xs text-gray-600 border-t border-gray-200 pt-2">
+            <span className="text-gray-400 block">7日間累積</span>
+            <span className="font-mono font-semibold">{precip7dayMm.toFixed(1)} mm</span>
           </div>
-        )}
+        </div>
 
         {/* 推定馬場 */}
         <div className="flex-1 flex flex-col justify-center">

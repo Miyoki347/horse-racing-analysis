@@ -23,18 +23,18 @@ export interface DayWeather {
   tempMin: number
   windMax: number
   weatherCode: number
-  label: string         // 「快晴」「雨」など
+  label: string
 }
 
 export interface WeatherResult {
   city: string
   raceDay: DayWeather
-  prevDay: DayWeather | null  // 前日（馬場への蓄積影響）
-  trackEstimate: string       // 推定馬場状態
-  trackNote: string           // 根拠メモ
+  prevDay: DayWeather | null
+  precip7dayMm: number        // レース日を除く前7日間の累積降水量
+  trackEstimate: string
+  trackNote: string
 }
 
-// WMO weather code → 日本語ラベル
 function wmoLabel(code: number): string {
   if (code === 0)              return '快晴'
   if (code <= 2)               return '晴れ'
@@ -48,13 +48,21 @@ function wmoLabel(code: number): string {
   return '不明'
 }
 
-// 降水量（当日＋前日 × 0.5）から馬場状態を推定
-function estimateTrack(raceDayMm: number, prevDayMm: number): { estimate: string; note: string } {
-  const effective = raceDayMm + prevDayMm * 0.5
-  if (effective < 1)   return { estimate: '良',   note: `降水量${raceDayMm.toFixed(1)}mm（乾燥）` }
-  if (effective < 6)   return { estimate: '稍重', note: `降水量${raceDayMm.toFixed(1)}mm（前日影響含む実効${effective.toFixed(1)}mm）` }
-  if (effective < 18)  return { estimate: '重',   note: `降水量${raceDayMm.toFixed(1)}mm（前日影響含む実効${effective.toFixed(1)}mm）` }
-  return               { estimate: '不良', note: `降水量${raceDayMm.toFixed(1)}mm（前日影響含む実効${effective.toFixed(1)}mm）` }
+// 7日間蓄積を考慮した馬場推定
+// effective = 当日 + 前日×0.5 + 7日累積×0.2
+function estimateTrack(raceDayMm: number, prevDayMm: number, prior7dayMm: number): { estimate: string; note: string } {
+  const effective = raceDayMm + prevDayMm * 0.5 + prior7dayMm * 0.2
+  const detail = `実効${effective.toFixed(1)}mm（当日${raceDayMm.toFixed(1)}+前日半分+7日蓄積${prior7dayMm.toFixed(1)}mm×0.2）`
+  if (effective < 1)   return { estimate: '良',   note: detail }
+  if (effective < 6)   return { estimate: '稍重', note: detail }
+  if (effective < 18)  return { estimate: '重',   note: detail }
+  return               { estimate: '不良', note: detail }
+}
+
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T00:00:00Z')
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
 }
 
 function buildUrl(base: string, lat: number, lon: number, start: string, end: string): string {
@@ -81,21 +89,16 @@ export async function fetchWeatherForecast(course: string, raceDate: string): Pr
   const coords = VENUE_COORDS[course]
   if (!coords) return null
 
-  const raceDt  = new Date(raceDate)
-  const prevDt  = new Date(raceDate)
-  prevDt.setDate(prevDt.getDate() - 1)
+  const prevDate = addDays(raceDate, -1)
+  const start    = addDays(raceDate, -7)  // 7日前から取得
 
-  const start = prevDt.toISOString().slice(0, 10)
-  const end   = raceDt.toISOString().slice(0, 10)
-
-  // 今日以降は forecast、過去は archive
   const today  = new Date().toISOString().slice(0, 10)
   const base   = raceDate >= today
     ? 'https://api.open-meteo.com/v1/forecast'
     : 'https://archive-api.open-meteo.com/v1/archive'
 
   try {
-    const res = await fetch(buildUrl(base, coords.lat, coords.lon, start, end), {
+    const res = await fetch(buildUrl(base, coords.lat, coords.lon, start, raceDate), {
       next: { revalidate: 3600 },
     })
     if (!res.ok) return null
@@ -103,11 +106,16 @@ export async function fetchWeatherForecast(course: string, raceDate: string): Pr
     const days = parseDays(json)
 
     const raceDay = days.find((d) => d.date === raceDate) ?? days[days.length - 1]
-    const prevDay = days.find((d) => d.date === start) ?? null
+    const prevDay = days.find((d) => d.date === prevDate) ?? null
 
-    const { estimate, note } = estimateTrack(raceDay.precipMm, prevDay?.precipMm ?? 0)
+    // レース日を除く前7日分の累積
+    const prior7dayMm = days
+      .filter((d) => d.date !== raceDate)
+      .reduce((sum, d) => sum + d.precipMm, 0)
 
-    return { city: coords.city, raceDay, prevDay, trackEstimate: estimate, trackNote: note }
+    const { estimate, note } = estimateTrack(raceDay.precipMm, prevDay?.precipMm ?? 0, prior7dayMm)
+
+    return { city: coords.city, raceDay, prevDay, precip7dayMm: prior7dayMm, trackEstimate: estimate, trackNote: note }
   } catch {
     return null
   }

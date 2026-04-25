@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import type { RaceResult } from '@/types/race'
 
 interface Props {
@@ -40,7 +41,11 @@ export function HorseTable({ results }: Props) {
                   {pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : pos ?? '-'}
                 </td>
                 <td className="px-3 py-3 text-center">{r.horse_number}</td>
-                <td className="px-3 py-3 font-medium whitespace-nowrap">{r.horses?.name}</td>
+                <td className="px-3 py-3 font-medium whitespace-nowrap">
+                  <Link href={`/horse/${encodeURIComponent(r.horses?.name ?? '')}`} className="text-indigo-600 hover:underline">
+                    {r.horses?.name}
+                  </Link>
+                </td>
                 <td className="px-3 py-3 whitespace-nowrap text-gray-600">{r.jockeys?.name}</td>
                 <td className="px-3 py-3 text-center">{r.weight_carried}</td>
                 <td className="px-3 py-3 whitespace-nowrap">

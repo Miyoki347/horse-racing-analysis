@@ -9,6 +9,11 @@ export interface Race {
   grade: string | null
   race_name: string
   netkeiba_race_id: string
+  precipitation_mm: number | null
+  prev_day_precip_mm: number | null
+  precip_7day_mm: number | null
+  track_condition_est: number | null
+  track_bias_score: number | null
 }
 
 export interface RaceResult {

@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import Link from 'next/link'
 import type { HorseWithHistory } from '@/types/upcoming'
 
 interface Props {
@@ -48,7 +49,13 @@ export function HistoryBasedRanking({ horses }: Props) {
               <div className="w-36 flex-shrink-0">
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs text-gray-400">#{horse.horse_number}</span>
-                  <span className="text-sm font-semibold text-gray-900 truncate">{horse.horse_name}</span>
+                  <Link
+                    href={`/horse/${encodeURIComponent(horse.horse_name)}`}
+                    className="text-sm font-semibold text-indigo-600 hover:underline truncate"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {horse.horse_name}
+                  </Link>
                 </div>
                 <p className="text-xs text-gray-400 truncate">{horse.jockey_name ?? '-'}</p>
               </div>
@@ -66,17 +73,36 @@ export function HistoryBasedRanking({ horses }: Props) {
                     {hasData ? horse.avg_time_index!.toFixed(1) : 'データなし'}
                   </span>
                 </div>
-                <div className="flex gap-3 mt-0.5 text-xs text-gray-400">
-                  <span>最高 {horse.best_time_index?.toFixed(1) ?? '-'}</span>
-                  <span>斤量 {horse.weight_carried ?? '-'}kg</span>
+                <div className="flex gap-2 mt-1 flex-wrap items-center">
+                  <span className="text-xs text-gray-400">最高 {horse.best_time_index?.toFixed(1) ?? '-'}</span>
+                  <span className="text-xs text-gray-400">斤量 {horse.weight_carried ?? '-'}kg</span>
                   {horse.horse_weight && (
-                    <span>
+                    <span className="text-xs text-gray-400">
                       {horse.horse_weight}kg
                       {horse.horse_weight_change != null && (
                         <span className={horse.horse_weight_change > 0 ? 'text-red-400' : horse.horse_weight_change < 0 ? 'text-blue-400' : ''}>
                           {horse.horse_weight_change > 0 ? `+${horse.horse_weight_change}` : horse.horse_weight_change}
                         </span>
                       )}
+                    </span>
+                  )}
+                  {horse.rest_weeks != null && horse.rest_weeks >= 4 && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                      horse.rest_weeks >= 12
+                        ? 'bg-orange-100 text-orange-700'
+                        : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {horse.rest_weeks >= 12 ? `休み明け${horse.rest_weeks}週` : `中${horse.rest_weeks}週`}
+                    </span>
+                  )}
+                  {horse.is_jockey_changed && (
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700 font-medium">
+                      乗り替わり
+                    </span>
+                  )}
+                  {horse.jockey_course_race_count != null && (
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600 font-medium">
+                      コース勝率{horse.jockey_course_win_rate}%・複{horse.jockey_course_top3_rate}%({horse.jockey_course_race_count}走)
                     </span>
                   )}
                 </div>

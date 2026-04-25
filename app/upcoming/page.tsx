@@ -39,9 +39,8 @@ export default async function UpcomingPage() {
           >
             過去レース
           </Link>
-          <span className="px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white">
-            🗓️ 出走予定
-          </span>
+          <span className="px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white">🗓️ 出走予定</span>
+          <Link href="/simulate" className="px-4 py-2 rounded-full text-sm font-medium bg-white border border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 transition-colors">🔬 シミュレーター</Link>
         </div>
 
         <div className="mb-4">
