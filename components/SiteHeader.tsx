@@ -1,13 +1,14 @@
 import Link from 'next/link'
 
 interface Props {
-  active: 'races' | 'upcoming' | 'simulate'
+  active: 'races' | 'upcoming' | 'simulate' | 'jockey'
 }
 
 const NAV = [
   { href: '/',         label: '過去レース',         key: 'races'    },
   { href: '/upcoming', label: '🗓️ 出走予定',       key: 'upcoming' },
   { href: '/simulate', label: '🔬 シミュレーター',  key: 'simulate' },
+  { href: '/jockey',   label: '🏅 騎手ランキング', key: 'jockey'   },
 ] as const
 
 export function SiteHeader({ active }: Props) {
