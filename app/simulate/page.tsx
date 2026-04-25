@@ -32,12 +32,26 @@ const PODIUM = [
   { label: '3着予想', bg: 'bg-amber-50',  border: 'border-amber-300',  icon: '🥉' },
 ]
 
+function renderInline(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/)
+  if (parts.length === 1) return text
+  return parts.map((p, j) =>
+    p.startsWith('**') && p.endsWith('**')
+      ? <strong key={j} className="font-bold text-gray-900">{p.slice(2, -2)}</strong>
+      : p
+  )
+}
+
 function renderMd(text: string) {
   return text.split('\n').map((line, i) => {
     if (line.startsWith('## '))  return <h2 key={i} className="text-base font-bold mt-4 mb-1 text-gray-800">{line.slice(3)}</h2>
-    if (line.startsWith('- '))   return <p key={i} className="pl-3 text-gray-700">{line}</p>
-    if (line === '')              return <br key={i} />
-    return <p key={i} className="text-gray-700 leading-relaxed">{line}</p>
+    if (line.startsWith('### ')) return <h3 key={i} className="text-sm font-bold mt-3 mb-1 text-gray-700">{line.slice(4)}</h3>
+    if (line.startsWith('* ') || line.startsWith('- ')) {
+      const body = line.slice(2)
+      return <p key={i} className="pl-3 text-gray-700">・{renderInline(body)}</p>
+    }
+    if (line === '') return <br key={i} />
+    return <p key={i} className="text-gray-700 leading-relaxed">{renderInline(line)}</p>
   })
 }
 
@@ -114,12 +128,16 @@ export default function SimulatePage() {
 
         {/* ヘッダー・ナビ */}
         <div>
+          <div className="mb-4">
+            <h1 className="text-2xl font-bold text-gray-900">🏇 競馬AI分析</h1>
+            <p className="mt-1 text-sm text-gray-500">JRA重賞データに基づくデータサイエンス指向の展開分析</p>
+          </div>
           <div className="flex gap-2 mb-4">
             <Link href="/"        className="px-4 py-2 rounded-full text-sm font-medium bg-white border border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 transition-colors">過去レース</Link>
             <Link href="/upcoming" className="px-4 py-2 rounded-full text-sm font-medium bg-white border border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 transition-colors">🗓️ 出走予定</Link>
             <span className="px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white">🔬 シミュレーター</span>
           </div>
-          <h1 className="text-xl font-bold text-gray-900">カスタムレースシミュレーター</h1>
+          <h2 className="text-xl font-bold text-gray-900">カスタムレースシミュレーター</h2>
           <p className="text-sm text-gray-500 mt-1">好きな馬を選んで、条件を設定して予測する</p>
         </div>
 

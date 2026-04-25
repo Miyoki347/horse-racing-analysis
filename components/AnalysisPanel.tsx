@@ -44,14 +44,26 @@ function parseTop3(text: string): { cards: PredictionCard[]; rest: string } {
   return { cards, rest }
 }
 
+function renderInline(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/)
+  if (parts.length === 1) return text
+  return parts.map((p, j) =>
+    p.startsWith('**') && p.endsWith('**')
+      ? <strong key={j} className="font-bold text-gray-900">{p.slice(2, -2)}</strong>
+      : p
+  )
+}
+
 function renderMarkdown(text: string) {
   return text.split('\n').map((line, i) => {
     if (line.startsWith('## '))  return <h2 key={i} className="text-base font-bold mt-4 mb-1 text-gray-800">{line.slice(3)}</h2>
     if (line.startsWith('### ')) return <h3 key={i} className="text-sm font-bold mt-3 mb-1 text-gray-700">{line.slice(4)}</h3>
-    if (line.startsWith('**') && line.endsWith('**')) return <p key={i} className="font-bold text-gray-800">{line.slice(2, -2)}</p>
-    if (line.startsWith('・') || line.startsWith('- ')) return <p key={i} className="pl-3 text-gray-700">{line}</p>
+    if (line.startsWith('* ') || line.startsWith('- ')) {
+      const body = line.slice(2)
+      return <p key={i} className="pl-3 text-gray-700">・{renderInline(body)}</p>
+    }
     if (line === '') return <br key={i} />
-    return <p key={i} className="text-gray-700 leading-relaxed">{line}</p>
+    return <p key={i} className="text-gray-700 leading-relaxed">{renderInline(line)}</p>
   })
 }
 
