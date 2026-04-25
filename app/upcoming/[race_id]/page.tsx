@@ -4,7 +4,10 @@ import { supabase } from '@/lib/supabase'
 import { GradeBadge } from '@/components/GradeBadge'
 import { HistoryBasedRanking } from '@/components/HistoryBasedRanking'
 import { AnalysisPanel } from '@/components/AnalysisPanel'
+import { WeatherCard } from '@/components/WeatherCard'
+import { fetchWeatherForecast } from '@/lib/weather'
 import type { HorseWithHistory, UpcomingEntry } from '@/types/upcoming'
+import type { WeatherResult } from '@/lib/weather'
 
 interface PageProps {
   params: Promise<{ race_id: string }>
@@ -42,11 +45,11 @@ async function enrichWithHistory(entries: UpcomingEntry[]): Promise<HorseWithHis
     .not('time_index', 'is', null)
 
   const results: HistoryRow[] = (rawResults ?? []).map((r) => ({
-    horse_id:       r.horse_id as string,
+    horse_id:        r.horse_id as string,
     finish_position: r.finish_position as number | null,
-    time_index:     r.time_index as number | null,
-    last_3f_time:   r.last_3f_time as number | null,
-    races:          r.races as unknown as RaceJoin,
+    time_index:      r.time_index as number | null,
+    last_3f_time:    r.last_3f_time as number | null,
+    races:           r.races as unknown as RaceJoin,
   }))
 
   const historyMap: Record<string, HistoryRow[]> = {}
@@ -54,7 +57,6 @@ async function enrichWithHistory(entries: UpcomingEntry[]): Promise<HorseWithHis
     if (!historyMap[r.horse_id]) historyMap[r.horse_id] = []
     historyMap[r.horse_id].push(r)
   }
-
   for (const id of Object.keys(historyMap)) {
     historyMap[id] = historyMap[id]
       .sort((a, b) => (b.races?.date ?? '').localeCompare(a.races?.date ?? ''))
@@ -64,22 +66,22 @@ async function enrichWithHistory(entries: UpcomingEntry[]): Promise<HorseWithHis
   return entries.map((entry) => {
     const horseId = nameToId[entry.horse_name] as string | undefined
     const history = horseId ? (historyMap[horseId] ?? []) : []
-
     const indices = history.map((r) => r.time_index).filter((v): v is number => v != null)
-    const avg_time_index  = indices.length > 0 ? indices.reduce((s, v) => s + v, 0) / indices.length : null
-    const best_time_index = indices.length > 0 ? Math.max(...indices) : null
 
-    const recent_results = history.map((r) => ({
-      date:            r.races?.date ?? '',
-      race_name:       r.races?.race_name ?? '',
-      finish_position: r.finish_position,
-      time_index:      r.time_index,
-      last_3f_time:    r.last_3f_time,
-      distance:        r.races?.distance ?? 0,
-      track_type:      r.races?.track_type ?? '',
-    }))
-
-    return { ...entry, avg_time_index, best_time_index, recent_results }
+    return {
+      ...entry,
+      avg_time_index:  indices.length > 0 ? indices.reduce((s, v) => s + v, 0) / indices.length : null,
+      best_time_index: indices.length > 0 ? Math.max(...indices) : null,
+      recent_results:  history.map((r) => ({
+        date:            r.races?.date ?? '',
+        race_name:       r.races?.race_name ?? '',
+        finish_position: r.finish_position,
+        time_index:      r.time_index,
+        last_3f_time:    r.last_3f_time,
+        distance:        r.races?.distance ?? 0,
+        track_type:      r.races?.track_type ?? '',
+      })),
+    }
   })
 }
 
@@ -95,7 +97,12 @@ export default async function UpcomingRacePage({ params }: PageProps) {
   if (!entries || entries.length === 0) notFound()
 
   const race = entries[0]
-  const horses = await enrichWithHistory(entries as UpcomingEntry[])
+
+  // 天気予報・馬場推定・馬の過去成績を並行取得
+  const [horses, weather] = await Promise.all([
+    enrichWithHistory(entries as UpcomingEntry[]),
+    fetchWeatherForecast(race.course, race.race_date) as Promise<WeatherResult | null>,
+  ])
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -118,6 +125,9 @@ export default async function UpcomingRacePage({ params }: PageProps) {
           </div>
         </div>
 
+        {/* 天気予報・推定馬場 */}
+        {weather && <WeatherCard weather={weather} />}
+
         {/* 予測ランキング */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h2 className="text-base font-semibold text-gray-800 mb-4">🏆 予測ランキング</h2>
@@ -128,9 +138,9 @@ export default async function UpcomingRacePage({ params }: PageProps) {
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h2 className="text-base font-semibold text-gray-800 mb-1">🤖 AI展開分析</h2>
           <p className="text-xs text-gray-400 mb-4">
-            データに基づく客観的な展開分析です。ギャンブル的な推奨ではありません。
+            天気・馬場推定・過去データを統合した客観的な展開分析です。
           </p>
-          <AnalysisPanel raceId={race_id} isUpcoming horses={horses} />
+          <AnalysisPanel raceId={race_id} isUpcoming horses={horses} weather={weather} />
         </div>
 
       </div>
