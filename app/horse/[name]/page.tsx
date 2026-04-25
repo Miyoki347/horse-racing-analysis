@@ -25,7 +25,7 @@ type HorseResult = {
   horse_weight: number | null
   horse_weight_change: number | null
   weight_carried: number | null
-  jockeys: { name: string } | null
+  jockeys: { name: string; display_name: string | null } | null
   races: RaceInfo
 }
 
@@ -50,7 +50,7 @@ export default async function HorsePage({ params }: PageProps) {
 
   const { data: rawResults } = await supabase
     .from('race_results')
-    .select('finish_position, time_index, last_3f_time, horse_weight, horse_weight_change, weight_carried, jockeys(name), races(date, race_name, course, distance, track_type, grade, netkeiba_race_id)')
+    .select('finish_position, time_index, last_3f_time, horse_weight, horse_weight_change, weight_carried, jockeys(name, display_name), races(date, race_name, course, distance, track_type, grade, netkeiba_race_id)')
     .eq('horse_id', horse.id)
 
   const results: HorseResult[] = (rawResults ?? []).map((r) => ({
@@ -60,7 +60,7 @@ export default async function HorsePage({ params }: PageProps) {
     horse_weight:        r.horse_weight as number | null,
     horse_weight_change: r.horse_weight_change as number | null,
     weight_carried:      r.weight_carried as number | null,
-    jockeys:             r.jockeys as unknown as { name: string } | null,
+    jockeys:             r.jockeys as unknown as { name: string; display_name: string | null } | null,
     races:               r.races as unknown as RaceInfo,
   }))
 
@@ -228,7 +228,7 @@ export default async function HorsePage({ params }: PageProps) {
                           {r.time_index?.toFixed(1) ?? '-'}
                         </td>
                         <td className="py-2 pr-4 text-center text-xs text-gray-500">{r.last_3f_time ?? '-'}</td>
-                        <td className="py-2 pr-4 whitespace-nowrap text-xs text-gray-600">{r.jockeys?.name ?? '-'}</td>
+                        <td className="py-2 pr-4 whitespace-nowrap text-xs text-gray-600">{r.jockeys?.display_name ?? r.jockeys?.name ?? '-'}</td>
                         <td className="py-2 pr-4 text-center text-xs">
                           {r.horse_weight ?? '-'}
                           {r.horse_weight_change != null && (

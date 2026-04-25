@@ -41,7 +41,7 @@ export function PredictionRanking({ results }: Props) {
             {/* 馬名・騎手 */}
             <div className="w-32 flex-shrink-0">
               <p className="text-sm font-semibold text-gray-900 truncate">{r.horses?.name ?? '-'}</p>
-              <p className="text-xs text-gray-400 truncate">{r.jockeys?.name ?? '-'}</p>
+              <p className="text-xs text-gray-400 truncate">{r.jockeys?.display_name ?? r.jockeys?.name ?? '-'}</p>
             </div>
 
             {/* タイム指数バー */}

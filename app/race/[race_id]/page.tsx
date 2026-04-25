@@ -26,7 +26,7 @@ export default async function RaceDetailPage({ params }: PageProps) {
 
   const { data: results } = await supabase
     .from('race_results')
-    .select('*, horses(name), jockeys(name), trainers(name)')
+    .select('*, horses(name), jockeys(name, display_name), trainers(name)')
     .eq('race_id', race.id)
     .order('finish_position')
 
@@ -64,7 +64,7 @@ export default async function RaceDetailPage({ params }: PageProps) {
         {winner && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: '1着', value: winner.horses?.name, sub: winner.jockeys?.name },
+              { label: '1着', value: winner.horses?.name, sub: winner.jockeys?.display_name ?? winner.jockeys?.name },
               { label: '勝ちタイム', value: winner.time_seconds
                   ? `${Math.floor(winner.time_seconds / 60)}:${(winner.time_seconds % 60).toFixed(1).padStart(4,'0')}`
                   : '-', sub: `上がり${winner.last_3f_time ?? '-'}秒` },

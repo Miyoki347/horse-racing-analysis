@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
   const { data: rawResults } = await supabase
     .from('race_results')
-    .select('horse_id, finish_position, time_index, last_3f_time, jockey_id, jockeys(name), races(date, race_name, distance, track_type, track_condition)')
+    .select('horse_id, finish_position, time_index, last_3f_time, jockey_id, jockeys(name, display_name), races(date, race_name, distance, track_type, track_condition)')
     .in('horse_id', horseIds)
     .not('time_index', 'is', null)
 
@@ -46,7 +46,8 @@ export async function POST(req: NextRequest) {
     time_index:      r.time_index as number | null,
     last_3f_time:    r.last_3f_time as number | null,
     jockey_id:       r.jockey_id as string | null,
-    jockey_name:     (r.jockeys as unknown as { name: string } | null)?.name ?? null,
+    jockey_name:     ((r.jockeys as unknown as { name: string; display_name: string | null } | null))?.display_name
+                     ?? ((r.jockeys as unknown as { name: string } | null))?.name ?? null,
     races:           r.races as unknown as RaceJoin,
   }))
 

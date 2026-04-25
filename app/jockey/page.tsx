@@ -36,10 +36,12 @@ export default async function JockeyPage({ searchParams }: PageProps) {
 
   const jockeyIds = (stats ?? []).map((s) => s.jockey_id as string)
   const { data: jockeys } = jockeyIds.length > 0
-    ? await supabase.from('jockeys').select('id, name').in('id', jockeyIds)
+    ? await supabase.from('jockeys').select('id, name, display_name').in('id', jockeyIds)
     : { data: [] }
 
-  const nameMap = Object.fromEntries((jockeys ?? []).map((j) => [j.id as string, j.name as string]))
+  const nameMap = Object.fromEntries(
+    (jockeys ?? []).map((j) => [j.id as string, (j.display_name as string | null) ?? (j.name as string)])
+  )
 
   const rows = (stats ?? []).map((s) => ({
     jockey_id:  s.jockey_id as string,

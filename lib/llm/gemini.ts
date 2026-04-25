@@ -14,7 +14,7 @@ export async function generateRaceAnalysis(
 
   const horseSummary = top5.map((r) => {
     const name     = r.horses?.name ?? '不明'
-    const jockey   = r.jockeys?.name ?? '不明'
+    const jockey   = r.jockeys?.display_name ?? r.jockeys?.name ?? '不明'
     const idx      = r.time_index?.toFixed(1) ?? '-'
     const last3f   = r.last_3f_time ?? '-'
     const pop      = r.popularity ?? '-'

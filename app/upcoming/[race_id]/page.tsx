@@ -65,7 +65,7 @@ async function enrichWithHistory(entries: UpcomingEntry[]): Promise<HorseWithHis
       .not('time_index', 'is', null),
     supabase
       .from('race_results')
-      .select('horse_id, jockeys(name), races(date)')
+      .select('horse_id, jockeys(name, display_name), races(date)')
       .in('horse_id', horseIds),
   ])
 
@@ -81,7 +81,8 @@ async function enrichWithHistory(entries: UpcomingEntry[]): Promise<HorseWithHis
   const latestMap = new Map<string, LastRaceRow>()
   for (const r of rawLatest ?? []) {
     const date       = (r.races as unknown as { date: string } | null)?.date ?? ''
-    const jockeyName = (r.jockeys as unknown as { name: string } | null)?.name ?? null
+    const _j         = r.jockeys as unknown as { name: string; display_name: string | null } | null
+    const jockeyName = _j?.display_name ?? _j?.name ?? null
     const horseId    = r.horse_id as string
     const existing   = latestMap.get(horseId)
     if (!existing || date > existing.date) {

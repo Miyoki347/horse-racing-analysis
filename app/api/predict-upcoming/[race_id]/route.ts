@@ -39,13 +39,13 @@ async function fetchJockeyStats(
 ): Promise<Record<string, JockeyStat>> {
   const prefixes = [...new Set(horses.map((h) => h.jockey_name).filter((n): n is string => !!n && n.length >= 2))]
 
-  const { data: allJockeys } = await supabase.from('jockeys').select('id, name')
+  const { data: allJockeys } = await supabase.from('jockeys').select('id, name, display_name')
   if (!allJockeys) return {}
 
   const matched: { prefix: string; id: string; fullName: string }[] = []
   for (const prefix of prefixes) {
-    const found = allJockeys.find((j) => j.name.startsWith(prefix))
-    if (found) matched.push({ prefix, id: found.id, fullName: found.name })
+    const found = allJockeys.find((j) => (j.name as string).startsWith(prefix))
+    if (found) matched.push({ prefix, id: found.id as string, fullName: (found.display_name as string | null) ?? (found.name as string) })
   }
   if (matched.length === 0) return {}
 

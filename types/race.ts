@@ -31,7 +31,7 @@ export interface RaceResult {
   horse_weight: number | null
   horse_weight_change: number | null
   horses: { name: string }
-  jockeys: { name: string }
+  jockeys: { name: string; display_name: string | null }
   trainers: { name: string }
 }
 

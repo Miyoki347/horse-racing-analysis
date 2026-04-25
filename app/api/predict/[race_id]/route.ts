@@ -25,7 +25,7 @@ export async function GET(
 
   const { data: results, error: resErr } = await supabase
     .from('race_results')
-    .select('*, horses(name), jockeys(name), trainers(name)')
+    .select('*, horses(name), jockeys(name, display_name), trainers(name)')
     .eq('race_id', race.id)
     .order('finish_position')
 

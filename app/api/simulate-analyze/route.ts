@@ -16,12 +16,12 @@ const TRACK_CONDITION_LABEL = ['良', '稍重', '重', '不良']
 
 async function fetchJockeyStats(horses: HorseWithHistory[]) {
   const prefixes = [...new Set(horses.map((h) => h.jockey_name).filter((n): n is string => !!n && n.length >= 2))]
-  const { data: allJockeys } = await supabase.from('jockeys').select('id, name')
+  const { data: allJockeys } = await supabase.from('jockeys').select('id, name, display_name')
   if (!allJockeys) return {}
 
   const matched = prefixes
-    .map((p) => ({ prefix: p, jockey: allJockeys.find((j) => j.name.startsWith(p)) }))
-    .filter((m): m is { prefix: string; jockey: { id: string; name: string } } => !!m.jockey)
+    .map((p) => ({ prefix: p, jockey: allJockeys.find((j) => (j.name as string).startsWith(p)) }))
+    .filter((m): m is { prefix: string; jockey: { id: string; name: string; display_name: string | null } } => !!m.jockey)
 
   if (!matched.length) return {}
 

@@ -46,7 +46,7 @@ export function HorseTable({ results }: Props) {
                     {r.horses?.name}
                   </Link>
                 </td>
-                <td className="px-3 py-3 whitespace-nowrap text-gray-600">{r.jockeys?.name}</td>
+                <td className="px-3 py-3 whitespace-nowrap text-gray-600">{r.jockeys?.display_name ?? r.jockeys?.name}</td>
                 <td className="px-3 py-3 text-center">{r.weight_carried}</td>
                 <td className="px-3 py-3 whitespace-nowrap">
                   {r.time_seconds
