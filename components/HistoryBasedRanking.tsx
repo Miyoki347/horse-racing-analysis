@@ -13,10 +13,21 @@ const RANK_STYLE = [
   'bg-amber-600 text-white',
 ]
 
+type SortMode = 'time_index' | 'ml_score'
+
 export function HistoryBasedRanking({ horses }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [sortMode, setSortMode] = useState<SortMode>('time_index')
+
+  const hasML = horses.some(h => h.ml_score != null)
 
   const ranked = [...horses].sort((a, b) => {
+    if (sortMode === 'ml_score') {
+      if (a.ml_score == null && b.ml_score == null) return 0
+      if (a.ml_score == null) return 1
+      if (b.ml_score == null) return -1
+      return b.ml_score - a.ml_score
+    }
     if (a.avg_time_index == null && b.avg_time_index == null) return 0
     if (a.avg_time_index == null) return 1
     if (b.avg_time_index == null) return -1
@@ -27,7 +38,29 @@ export function HistoryBasedRanking({ horses }: Props) {
 
   return (
     <div className="space-y-2">
-      <p className="text-xs text-gray-400">過去直近5走のタイム指数平均によるランキング。データ不足の馬は下位に表示。</p>
+      {/* ソート切り替え */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-gray-400">並び順:</span>
+        <button
+          onClick={() => setSortMode('time_index')}
+          className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${sortMode === 'time_index' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200'}`}
+        >
+          タイム指数
+        </button>
+        {hasML && (
+          <button
+            onClick={() => setSortMode('ml_score')}
+            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${sortMode === 'ml_score' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200'}`}
+          >
+            🤖 AI予測
+          </button>
+        )}
+      </div>
+      <p className="text-xs text-gray-400">
+        {sortMode === 'ml_score'
+          ? 'LightGBMによる複勝確率予測。タイム指数・騎手・ローテーション等を統合。'
+          : '過去直近5走のタイム指数平均によるランキング。データ不足の馬は下位に表示。'}
+      </p>
       {ranked.map((horse, i) => {
         const hasData  = horse.avg_time_index != null
         const pct      = hasData ? Math.round((horse.avg_time_index! / maxScore) * 100) : 0
@@ -65,12 +98,18 @@ export function HistoryBasedRanking({ horses }: Props) {
                 <div className="flex items-center gap-2">
                   <div className="flex-1 bg-gray-100 rounded-full h-2">
                     <div
-                      className={`h-2 rounded-full transition-all ${hasData ? 'bg-indigo-500' : 'bg-gray-300'}`}
-                      style={{ width: `${pct}%` }}
+                      className={`h-2 rounded-full transition-all ${
+                        sortMode === 'ml_score'
+                          ? (horse.ml_score != null ? 'bg-green-500' : 'bg-gray-300')
+                          : (hasData ? 'bg-indigo-500' : 'bg-gray-300')
+                      }`}
+                      style={{ width: `${sortMode === 'ml_score' ? (horse.ml_score != null ? Math.round(horse.ml_score * 100) : 0) : pct}%` }}
                     />
                   </div>
                   <span className="text-xs font-mono text-gray-700 w-12 text-right flex-shrink-0">
-                    {hasData ? horse.avg_time_index!.toFixed(1) : 'データなし'}
+                    {sortMode === 'ml_score'
+                      ? (horse.ml_score != null ? `${(horse.ml_score * 100).toFixed(0)}%` : '-')
+                      : (hasData ? horse.avg_time_index!.toFixed(1) : 'データなし')}
                   </span>
                 </div>
                 <div className="flex gap-2 mt-1 flex-wrap items-center">
@@ -93,6 +132,11 @@ export function HistoryBasedRanking({ horses }: Props) {
                         : 'bg-gray-100 text-gray-500'
                     }`}>
                       {horse.rest_weeks >= 12 ? `休み明け${horse.rest_weeks}週` : `中${horse.rest_weeks}週`}
+                    </span>
+                  )}
+                  {horse.ml_score != null && sortMode !== 'ml_score' && (
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-medium">
+                      AI複勝{(horse.ml_score * 100).toFixed(0)}%
                     </span>
                   )}
                   {horse.is_jockey_changed && (

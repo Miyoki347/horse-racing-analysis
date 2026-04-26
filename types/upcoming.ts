@@ -1,4 +1,5 @@
 export interface UpcomingEntry {
+  ml_score: number | null
   id: string
   netkeiba_race_id: string
   race_name: string
