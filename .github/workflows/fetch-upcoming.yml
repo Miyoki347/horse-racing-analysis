@@ -1,0 +1,28 @@
+name: Fetch Upcoming Races
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'  # 毎週月曜 UTC 0:00 = JST 9:00
+  workflow_dispatch:      # GitHub上から手動実行も可能
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Fetch upcoming races
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python -u scripts/fetch_upcoming.py --weeks 2
