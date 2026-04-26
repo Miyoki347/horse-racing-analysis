@@ -43,6 +43,13 @@ export function HistoryBasedRanking({ horses }: Props) {
         <p className="text-xs text-gray-500"><span className="font-semibold text-indigo-600">📊 タイム指数</span> — 過去直近5走の補正済みタイム指数の平均。実績ベースの客観評価。</p>
         {hasML && <p className="text-xs text-gray-500"><span className="font-semibold text-green-600">🤖 AI予測</span> — LightGBMによる複勝確率（3着以内）。タイム指数・騎手・ローテーション等を統合。</p>}
         <p className="text-xs text-gray-500"><span className="font-semibold text-gray-600">📝 AI展開分析</span> — 脚質・血統・騎手の特性をもとにした展開シナリオ（テキスト）。下部に表示。</p>
+        <div className="border-t border-gray-200 mt-2 pt-2 space-y-0.5">
+          <p className="text-xs font-semibold text-gray-600 mb-1">買い方ガイド</p>
+          <p className="text-xs text-gray-500">🎯 <span className="font-medium">単勝</span> → <span className="text-indigo-600 font-medium">タイム指数</span>上位の馬を重視。実績の差が出やすい。</p>
+          <p className="text-xs text-gray-500">🎯 <span className="font-medium">複勝</span> → <span className="text-green-600 font-medium">AI予測</span>の複勝確率が高い馬。3着以内を直接予測したモデル値。</p>
+          <p className="text-xs text-gray-500">🎯 <span className="font-medium">馬連・ワイド</span> → タイム指数上位 × AI予測上位の両方に入る馬を軸に。</p>
+          <p className="text-xs text-gray-500">🎯 <span className="font-medium">展開次第の穴馬</span> → <span className="text-gray-600 font-medium">AI展開分析</span>（下部）で脚質のかみ合いを確認。</p>
+        </div>
       </div>
 
       {/* ソート切り替え */}
