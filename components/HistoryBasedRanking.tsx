@@ -38,6 +38,13 @@ export function HistoryBasedRanking({ horses }: Props) {
 
   return (
     <div className="space-y-2">
+      {/* モード説明 */}
+      <div className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 space-y-1">
+        <p className="text-xs text-gray-500"><span className="font-semibold text-indigo-600">📊 タイム指数</span> — 過去直近5走の補正済みタイム指数の平均。実績ベースの客観評価。</p>
+        {hasML && <p className="text-xs text-gray-500"><span className="font-semibold text-green-600">🤖 AI予測</span> — LightGBMによる複勝確率（3着以内）。タイム指数・騎手・ローテーション等を統合。</p>}
+        <p className="text-xs text-gray-500"><span className="font-semibold text-gray-600">📝 AI展開分析</span> — 脚質・血統・騎手の特性をもとにした展開シナリオ（テキスト）。下部に表示。</p>
+      </div>
+
       {/* ソート切り替え */}
       <div className="flex items-center gap-2">
         <span className="text-xs text-gray-400">並び順:</span>
@@ -45,22 +52,26 @@ export function HistoryBasedRanking({ horses }: Props) {
           onClick={() => setSortMode('time_index')}
           className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${sortMode === 'time_index' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200'}`}
         >
-          タイム指数
+          📊 タイム指数
         </button>
         {hasML && (
           <button
             onClick={() => setSortMode('ml_score')}
-            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${sortMode === 'ml_score' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200'}`}
+            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${sortMode === 'ml_score' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-600 border-gray-200'}`}
           >
             🤖 AI予測
           </button>
         )}
       </div>
-      <p className="text-xs text-gray-400">
-        {sortMode === 'ml_score'
-          ? 'LightGBMによる複勝確率予測。タイム指数・騎手・ローテーション等を統合。'
-          : '過去直近5走のタイム指数平均によるランキング。データ不足の馬は下位に表示。'}
-      </p>
+
+      {/* カラムヘッダー */}
+      <div className="flex items-center gap-3 px-4 text-xs text-gray-400">
+        <span className="w-8 flex-shrink-0 text-center">順位</span>
+        <span className="w-36 flex-shrink-0">馬番 / 馬名 / 騎手</span>
+        <span className="flex-1 text-right pr-6">
+          {sortMode === 'ml_score' ? 'AI複勝確率' : 'タイム指数平均'}
+        </span>
+      </div>
       {ranked.map((horse, i) => {
         const hasData  = horse.avg_time_index != null
         const pct      = hasData ? Math.round((horse.avg_time_index! / maxScore) * 100) : 0
@@ -106,9 +117,9 @@ export function HistoryBasedRanking({ horses }: Props) {
                       style={{ width: `${sortMode === 'ml_score' ? (horse.ml_score != null ? Math.round(horse.ml_score * 100) : 0) : pct}%` }}
                     />
                   </div>
-                  <span className="text-xs font-mono text-gray-700 w-12 text-right flex-shrink-0">
+                  <span className="text-xs font-mono text-gray-700 w-16 text-right flex-shrink-0">
                     {sortMode === 'ml_score'
-                      ? (horse.ml_score != null ? `${(horse.ml_score * 100).toFixed(0)}%` : '-')
+                      ? (horse.ml_score != null ? `複勝${(horse.ml_score * 100).toFixed(0)}%` : '-')
                       : (hasData ? horse.avg_time_index!.toFixed(1) : 'データなし')}
                   </span>
                 </div>
