@@ -106,6 +106,7 @@ export async function POST(req: NextRequest) {
 
     return {
       id:                  horse.id,
+      ml_score:            null,
       netkeiba_race_id:    '',
       race_name:           '',
       race_date:           '',
