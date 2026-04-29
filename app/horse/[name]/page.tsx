@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { GradeBadge } from '@/components/GradeBadge'
 import { HorseIndexChart } from '@/components/HorseIndexChart'
+import { HorseConditionChart, type ConditionStat } from '@/components/HorseConditionChart'
 
 interface PageProps {
   params: Promise<{ name: string }>
@@ -47,6 +48,19 @@ export default async function HorsePage({ params }: PageProps) {
     .single()
 
   if (!horse) notFound()
+
+  const { data: rawConditionStats } = await supabase
+    .from('horse_condition_stats')
+    .select('track_condition, win_rate, top3_rate, race_count, avg_odds')
+    .eq('horse_id', horse.id)
+
+  const conditionStats: ConditionStat[] = (rawConditionStats ?? []).map((r) => ({
+    track_condition: r.track_condition as number,
+    win_rate:        Number(r.win_rate),
+    top3_rate:       Number(r.top3_rate),
+    race_count:      r.race_count as number,
+    avg_odds:        r.avg_odds != null ? Number(r.avg_odds) : null,
+  }))
 
   const { data: rawResults } = await supabase
     .from('race_results')
@@ -141,6 +155,28 @@ export default async function HorsePage({ params }: PageProps) {
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <h2 className="text-base font-semibold text-gray-800 mb-4">📈 タイム指数推移</h2>
             <HorseIndexChart data={chartData} />
+          </div>
+        )}
+
+        {/* 馬場状態別成績 */}
+        {conditionStats.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h2 className="text-base font-semibold text-gray-800 mb-4">🌧 馬場状態別成績</h2>
+            <HorseConditionChart stats={conditionStats} />
+            <div className="mt-3 grid grid-cols-4 gap-2 text-center text-xs text-gray-500">
+              {(['良', '稍重', '重', '不良'] as const).map((label, i) => {
+                const s = conditionStats.find((r) => r.track_condition === i)
+                if (!s) return <div key={label} className="opacity-30">{label}<br />-</div>
+                return (
+                  <div key={label} className="bg-gray-50 rounded-lg p-2">
+                    <p className="font-medium text-gray-700 mb-0.5">{label}</p>
+                    <p className="text-gray-400">{s.race_count}走</p>
+                    <p className="text-indigo-600 font-semibold">{Math.round(s.win_rate * 100)}%勝</p>
+                    <p className="text-emerald-600">{Math.round(s.top3_rate * 100)}%複</p>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
 

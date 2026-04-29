@@ -130,7 +130,9 @@ export default async function JockeyPage({ searchParams }: PageProps) {
                 >
                   <span className={`text-sm font-bold ${i < 3 ? 'text-indigo-500' : 'text-gray-300'}`}>{i + 1}</span>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900 truncate">{row.name}</p>
+                    <Link href={`/jockey/${row.jockey_id}`} className="text-sm font-semibold text-gray-900 hover:text-indigo-600 truncate">
+                      {row.name}
+                    </Link>
                     <div className="mt-1 h-1.5 bg-gray-100 rounded-full w-full">
                       <div className="h-1.5 bg-indigo-400 rounded-full" style={{ width: `${pct}%` }} />
                     </div>

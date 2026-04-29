@@ -6,6 +6,7 @@ import { HistoryBasedRanking } from '@/components/HistoryBasedRanking'
 import { AnalysisPanel } from '@/components/AnalysisPanel'
 import { WeatherCard } from '@/components/WeatherCard'
 import { fetchWeatherForecast } from '@/lib/weather'
+import { MLPredictButton } from '@/components/MLPredictButton'
 import type { HorseWithHistory, UpcomingEntry } from '@/types/upcoming'
 import type { WeatherResult } from '@/lib/weather'
 
@@ -183,7 +184,11 @@ export default async function UpcomingRacePage({ params }: PageProps) {
 
         {/* 予測ランキング */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-base font-semibold text-gray-800 mb-4">🏆 予測ランキング</h2>
+          <h2 className="text-base font-semibold text-gray-800 mb-2">🏆 予測ランキング</h2>
+          <MLPredictButton
+            raceId={race_id}
+            hasML={horses.some((h) => h.ml_score != null)}
+          />
           <HistoryBasedRanking horses={horses} />
         </div>
 

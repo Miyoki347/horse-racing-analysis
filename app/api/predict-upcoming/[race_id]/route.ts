@@ -12,6 +12,54 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 )
 
+const TRACK_CONDITION_MAP: Record<string, number> = {
+  '良': 0, '稍重': 1, '重': 2, '不良': 3,
+}
+
+interface ConditionStat {
+  horse_id: string
+  win_rate: number
+  top3_rate: number
+  race_count: number
+}
+
+async function fetchHorseConditionStats(
+  horses: HorseWithHistory[],
+  trackCondition: number,
+): Promise<Map<string, ConditionStat>> {
+  const horseNames = horses.map((h) => h.horse_name)
+  const { data: horseMaster } = await supabase
+    .from('horses')
+    .select('id, name')
+    .in('name', horseNames)
+  if (!horseMaster || horseMaster.length === 0) return new Map()
+
+  const nameToId = Object.fromEntries(horseMaster.map((h) => [h.name as string, h.id as string]))
+  const horseIds = horseMaster.map((h) => h.id as string)
+
+  const { data: stats } = await supabase
+    .from('horse_condition_stats')
+    .select('horse_id, win_rate, top3_rate, race_count')
+    .in('horse_id', horseIds)
+    .eq('track_condition', trackCondition)
+
+  const result = new Map<string, ConditionStat>()
+  for (const h of horseMaster) {
+    const id = h.id as string
+    const s  = (stats ?? []).find((r) => r.horse_id === id)
+    if (s) {
+      result.set(h.name as string, {
+        horse_id:   id,
+        win_rate:   Number(s.win_rate),
+        top3_rate:  Number(s.top3_rate),
+        race_count: s.race_count as number,
+      })
+    }
+  }
+  void nameToId
+  return result
+}
+
 interface JockeyStat {
   fullName: string
   total: number
@@ -101,8 +149,16 @@ export async function POST(
     return new Response('No horses data', { status: 400 })
   }
 
-  const race        = horses[0]
-  const jockeyStats = await fetchJockeyStats(horses, race.course, race.track_type, race.distance)
+  const race = horses[0]
+
+  const estimatedCondition = weather?.trackEstimate
+    ? (TRACK_CONDITION_MAP[weather.trackEstimate] ?? 0)
+    : 0
+
+  const [jockeyStats, conditionStatsMap] = await Promise.all([
+    fetchJockeyStats(horses, race.course, race.track_type, race.distance),
+    fetchHorseConditionStats(horses, estimatedCondition),
+  ])
 
   const withData = [...horses]
     .filter((h) => h.avg_time_index != null)
@@ -110,9 +166,15 @@ export async function POST(
 
   const noData = horses.filter((h) => h.avg_time_index == null)
 
+  const conditionLabel = ['良', '稍重', '重', '不良'][estimatedCondition] ?? '良'
+
   const buildHorseLine = (h: HorseWithHistory, rank?: number) => {
     const prefix = rank != null ? `${rank}位(指数): ` : '・'
     const jStat  = h.jockey_name ? jockeyStats[h.jockey_name] : null
+    const cStat  = conditionStatsMap.get(h.horse_name)
+    const conditionNote = cStat && cStat.race_count > 0
+      ? `[${conditionLabel}馬場:勝率${Math.round(cStat.win_rate * 100)}%・複勝率${Math.round(cStat.top3_rate * 100)}%(${cStat.race_count}走)]`
+      : `[${conditionLabel}馬場:データなし]`
     const courseNote = jStat?.courseRaceCount != null
       ? `[${race.course}${race.track_type}:勝率${jStat.courseWinRate}%・複${jStat.courseTop3Rate}%(${jStat.courseRaceCount}走)]`
       : ''
@@ -133,7 +195,7 @@ export async function POST(
       : ''
     const jockeyNote = h.is_jockey_changed === true ? '乗り替わり' : ''
     const extras = [rotNote, jockeyNote].filter(Boolean).join('・')
-    return `${prefix}${h.horse_name}（${jInfo} / ${indexInfo}${recent ? ' / 直近:' + recent : ''}${hw ? ' / ' + hw : ''}${extras ? ' / ' + extras : ''}）`
+    return `${prefix}${h.horse_name}（${jInfo} / ${indexInfo}${recent ? ' / 直近:' + recent : ''}${hw ? ' / ' + hw : ''}${extras ? ' / ' + extras : ''} / ${conditionNote}）`
   }
 
   const dataSection = withData.length > 0

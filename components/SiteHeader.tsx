@@ -1,14 +1,17 @@
 import Link from 'next/link'
 
 interface Props {
-  active: 'races' | 'upcoming' | 'simulate' | 'jockey'
+  active: 'races' | 'upcoming' | 'simulate' | 'jockey' | 'horses' | 'pedigree' | 'backtest'
 }
 
 const NAV = [
-  { href: '/',         label: '過去レース',         key: 'races'    },
-  { href: '/upcoming', label: '🗓️ 出走予定',       key: 'upcoming' },
-  { href: '/simulate', label: '🔬 シミュレーター',  key: 'simulate' },
-  { href: '/jockey',   label: '🏅 騎手ランキング', key: 'jockey'   },
+  { href: '/',          label: '過去レース',         key: 'races'    },
+  { href: '/upcoming',  label: '🗓️ 出走予定',       key: 'upcoming' },
+  { href: '/simulate',  label: '🔬 シミュレーター',  key: 'simulate' },
+  { href: '/jockey',    label: '🏅 騎手ランキング', key: 'jockey'   },
+  { href: '/horses',    label: '🐴 馬検索',         key: 'horses'   },
+  { href: '/pedigree',  label: '🧬 血統適性',       key: 'pedigree' },
+  { href: '/backtest',  label: '📊 バックテスト',   key: 'backtest' },
 ] as const
 
 export function SiteHeader({ active }: Props) {

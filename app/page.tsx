@@ -4,31 +4,41 @@ import { GradeBadge } from '@/components/GradeBadge'
 import { SiteHeader } from '@/components/SiteHeader'
 import type { Race } from '@/types/race'
 
-const TRACK_CONDITION = ['良', '稍重', '重', '不良']
+const TRACK_CONDITION_LABELS = ['良', '稍重', '重', '不良'] as const
 const GRADES   = ['G1', 'G2', 'G3', 'L', 'OP'] as const
 const YEARS    = ['2025', '2024', '2023', '2022'] as const
 const COURSES  = ['東京', '中山', '阪神', '京都', '中京', '小倉', '函館', '札幌', '福島', '新潟'] as const
 
-type Grade  = typeof GRADES[number]
-type Year   = typeof YEARS[number]
-type Course = typeof COURSES[number]
+type Grade     = typeof GRADES[number]
+type Year      = typeof YEARS[number]
+type Course    = typeof COURSES[number]
+type Condition = typeof TRACK_CONDITION_LABELS[number]
 
 interface Filters {
-  grade?:  string
-  year?:   string
-  course?: string
+  grade?:     string
+  year?:      string
+  course?:    string
+  condition?: string
+  sort?:      string
 }
 
-async function getRaces({ grade, year, course }: Filters): Promise<Race[]> {
+const CONDITION_VALUE: Record<Condition, number> = { '良': 0, '稍重': 1, '重': 2, '不良': 3 }
+
+async function getRaces({ grade, year, course, condition, sort }: Filters): Promise<Race[]> {
   let query = supabase
     .from('races')
     .select('*')
-    .order('date', { ascending: false })
     .limit(100)
 
-  if (grade)  query = query.eq('grade', grade)
-  if (year)   query = query.gte('date', `${year}-01-01`).lte('date', `${year}-12-31`)
-  if (course) query = query.eq('course', course)
+  if (grade)     query = query.eq('grade', grade)
+  if (year)      query = query.gte('date', `${year}-01-01`).lte('date', `${year}-12-31`)
+  if (course)    query = query.eq('course', course)
+  if (condition) query = query.eq('track_condition', CONDITION_VALUE[condition as Condition])
+
+  const sortByBias = sort === 'bias' && !!condition
+  query = sortByBias
+    ? query.order('track_bias_score', { ascending: false, nullsFirst: false })
+    : query.order('date', { ascending: false })
 
   const { data, error } = await query
   if (error) { console.error(error); return [] }
@@ -39,24 +49,28 @@ async function getRaces({ grade, year, course }: Filters): Promise<Race[]> {
 function filterHref(current: Filters, key: keyof Filters, value: string | undefined): string {
   const p = new URLSearchParams()
   const next = { ...current, [key]: value }
-  if (next.grade)  p.set('grade', next.grade)
-  if (next.year)   p.set('year', next.year)
-  if (next.course) p.set('course', next.course)
+  if (next.grade)     p.set('grade', next.grade)
+  if (next.year)      p.set('year', next.year)
+  if (next.course)    p.set('course', next.course)
+  if (next.condition) p.set('condition', next.condition)
+  if (next.sort)      p.set('sort', next.sort)
   const qs = p.toString()
   return qs ? `/?${qs}` : '/'
 }
 
 interface HomeProps {
-  searchParams: Promise<{ grade?: string; year?: string; course?: string }>
+  searchParams: Promise<{ grade?: string; year?: string; course?: string; condition?: string; sort?: string }>
 }
 
 export default async function HomePage({ searchParams }: HomeProps) {
   const sp = await searchParams
-  const activeGrade  = GRADES.includes(sp.grade as Grade)   ? sp.grade  : undefined
-  const activeYear   = YEARS.includes(sp.year as Year)       ? sp.year   : undefined
-  const activeCourse = COURSES.includes(sp.course as Course) ? sp.course : undefined
+  const activeGrade     = GRADES.includes(sp.grade as Grade)               ? sp.grade     : undefined
+  const activeYear      = YEARS.includes(sp.year as Year)                  ? sp.year      : undefined
+  const activeCourse    = COURSES.includes(sp.course as Course)             ? sp.course    : undefined
+  const activeCondition = TRACK_CONDITION_LABELS.includes(sp.condition as Condition) ? sp.condition : undefined
+  const activeSort      = sp.sort === 'bias' ? 'bias' : undefined
 
-  const filters: Filters = { grade: activeGrade, year: activeYear, course: activeCourse }
+  const filters: Filters = { grade: activeGrade, year: activeYear, course: activeCourse, condition: activeCondition, sort: activeSort }
   const races = await getRaces(filters)
 
   const pill = (active: boolean) =>
@@ -104,12 +118,37 @@ export default async function HomePage({ searchParams }: HomeProps) {
               ))}
             </div>
           </div>
+
+          {/* 馬場状態 */}
+          <div>
+            <p className="text-xs text-gray-400 mb-2">馬場状態</p>
+            <div className="flex gap-2 flex-wrap">
+              <Link href={filterHref(filters, 'condition', undefined)} className={pill(!activeCondition)}>全て</Link>
+              {TRACK_CONDITION_LABELS.map((c) => (
+                <Link key={c} href={filterHref(filters, 'condition', activeCondition === c ? undefined : c)} className={pill(activeCondition === c)}>{c}</Link>
+              ))}
+            </div>
+          </div>
+
+          {/* ソート（馬場状態フィルター選択時のみ表示） */}
+          {activeCondition && (
+            <div className="pt-1 border-t border-gray-100">
+              <p className="text-xs text-gray-400 mb-2">並び順</p>
+              <div className="flex gap-2">
+                <Link href={filterHref(filters, 'sort', undefined)} className={pill(!activeSort)}>日付順</Link>
+                <Link href={filterHref(filters, 'sort', activeSort === 'bias' ? undefined : 'bias')} className={pill(activeSort === 'bias')}>
+                  トラックバイアス順
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 件数 */}
         <p className="text-xs text-gray-400 mb-3">
-          {[activeGrade, activeYear ? `${activeYear}年` : null, activeCourse].filter(Boolean).join(' / ') || '全件'}
+          {[activeGrade, activeYear ? `${activeYear}年` : null, activeCourse, activeCondition ? `馬場:${activeCondition}` : null].filter(Boolean).join(' / ') || '全件'}
           {' — '}{races.length}件表示
+          {activeSort === 'bias' && ' · バイアス順'}
         </p>
 
         {races.length === 0 ? (
@@ -135,7 +174,7 @@ export default async function HomePage({ searchParams }: HomeProps) {
                       <span>📅 {race.date}</span>
                       <span>📍 {race.course}</span>
                       <span>{race.track_type} {race.distance}m</span>
-                      <span>馬場:{TRACK_CONDITION[race.track_condition] ?? '良'}</span>
+                      <span>馬場:{TRACK_CONDITION_LABELS[race.track_condition] ?? '良'}</span>
                       {race.weather && <span>天候:{race.weather}</span>}
                     </div>
                   </div>
