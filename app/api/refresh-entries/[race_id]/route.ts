@@ -7,7 +7,18 @@ export async function POST(
   { params }: { params: Promise<{ race_id: string }> },
 ) {
   const { race_id } = await params
-  const res = await fetch(`${FASTAPI}/refresh-entries/${race_id}`, { method: 'POST' })
-  const json = await res.json()
+  let res: Response
+  try {
+    res = await fetch(`${FASTAPI}/refresh-entries/${race_id}`, { method: 'POST' })
+  } catch {
+    return NextResponse.json({ detail: 'FastAPI サーバーに接続できません (localhost:8000)' }, { status: 503 })
+  }
+  const text = await res.text()
+  let json: unknown
+  try {
+    json = JSON.parse(text)
+  } catch {
+    return NextResponse.json({ detail: text || `FastAPI error (${res.status})` }, { status: res.status })
+  }
   return NextResponse.json(json, { status: res.status })
 }

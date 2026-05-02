@@ -17,10 +17,14 @@ export function RefreshEntriesButton({ raceId }: Props) {
     setError(null)
     try {
       const res = await fetch(`/api/refresh-entries/${raceId}`, { method: 'POST' })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.detail ?? `${res.status}`)
-      setResult(json)
-      // ページを再読み込みして最新の出走馬を反映
+      let json: { updated?: number; detail?: string } = {}
+      try {
+        json = await res.json()
+      } catch {
+        throw new Error(`HTTP ${res.status} — レスポンスの解析に失敗しました`)
+      }
+      if (!res.ok) throw new Error(json.detail ?? `HTTP ${res.status}`)
+      setResult(json as { updated: number })
       window.location.reload()
     } catch (e) {
       setError(e instanceof Error ? e.message : '更新に失敗しました')
