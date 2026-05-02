@@ -3,10 +3,10 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { GradeBadge } from '@/components/GradeBadge'
 import { HistoryBasedRanking } from '@/components/HistoryBasedRanking'
-import { AnalysisPanel } from '@/components/AnalysisPanel'
 import { WeatherCard } from '@/components/WeatherCard'
 import { fetchWeatherForecast } from '@/lib/weather'
 import { MLPredictButton } from '@/components/MLPredictButton'
+import { AnalysisBettingSection } from '@/components/AnalysisBettingSection'
 import type { HorseWithHistory, UpcomingEntry } from '@/types/upcoming'
 import type { WeatherResult } from '@/lib/weather'
 
@@ -192,14 +192,8 @@ export default async function UpcomingRacePage({ params }: PageProps) {
           <HistoryBasedRanking horses={horses} />
         </div>
 
-        {/* AI展開分析 */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-base font-semibold text-gray-800 mb-1">🤖 AI展開分析</h2>
-          <p className="text-xs text-gray-400 mb-4">
-            天気・馬場推定・過去データを統合した客観的な展開分析です。
-          </p>
-          <AnalysisPanel raceId={race_id} isUpcoming horses={horses} weather={weather} />
-        </div>
+        {/* AI展開分析 + 馬券3パターン */}
+        <AnalysisBettingSection raceId={race_id} horses={horses} weather={weather} />
 
       </div>
     </main>

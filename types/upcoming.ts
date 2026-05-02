@@ -16,6 +16,8 @@ export interface UpcomingEntry {
   weight_carried: number | null
   horse_weight: number | null
   horse_weight_change: number | null
+  popularity: number | null
+  horse_ev_score: number | null
 }
 
 export interface HorseWithHistory extends UpcomingEntry {

@@ -35,15 +35,14 @@ HEADERS = {
 RACE_LIST_URL = "https://race.netkeiba.com/top/race_list_sub.html?kaisai_date={date}"
 
 
-def upcoming_weekends(weeks: int) -> list[str]:
+def upcoming_weekends(weeks: int = 5) -> list[str]:
     today = date.today()
+    end = today + timedelta(weeks=weeks)
     dates: list[str] = []
     current = today
-    count = 0
-    while count < weeks * 2:
+    while current <= end:
         if current.weekday() in (5, 6):
             dates.append(current.strftime("%Y%m%d"))
-            count += 1
         current += timedelta(days=1)
     return dates
 
@@ -75,7 +74,7 @@ def get_grade_race_ids(kaisai_date: str, session: requests.Session) -> list[str]
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--weeks", type=int, default=2)
+    parser.add_argument("--weeks", type=int, default=5, help="何週先まで取得するか（デフォルト5週≈1ヶ月）")
     args = parser.parse_args()
 
     session = requests.Session()

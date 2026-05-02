@@ -126,6 +126,8 @@ export async function POST(req: NextRequest) {
       best_time_index,
       rest_weeks:                null,
       is_jockey_changed:         null,
+      popularity:                null,
+      horse_ev_score:            null,
       jockey_course_win_rate:    cs ? Number(cs.win_rate)   : null,
       jockey_course_top3_rate:   cs ? Number(cs.top3_rate)  : null,
       jockey_course_race_count:  cs ? Number(cs.race_count) : null,

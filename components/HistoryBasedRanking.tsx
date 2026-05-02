@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import type { HorseWithHistory } from '@/types/upcoming'
+import { calcDangerScore, isPopularHorse } from '@/lib/dangerScore'
 
 interface Props {
   horses: HorseWithHistory[]
@@ -20,6 +21,12 @@ export function HistoryBasedRanking({ horses }: Props) {
   const [sortMode, setSortMode] = useState<SortMode>('time_index')
 
   const hasML = horses.some(h => h.ml_score != null)
+
+  const raceDistance  = horses[0]?.distance ?? 0
+  const raceTrackType = horses[0]?.track_type ?? '芝'
+  const dangerMap = new Map(
+    horses.map(h => [h.horse_name, calcDangerScore(h, raceDistance, raceTrackType, horses)])
+  )
 
   const ranked = [...horses].sort((a, b) => {
     if (sortMode === 'ml_score') {
@@ -162,6 +169,18 @@ export function HistoryBasedRanking({ horses }: Props) {
                       乗り替わり
                     </span>
                   )}
+                  {(() => {
+                    const danger  = dangerMap.get(horse.horse_name)
+                    const popular = isPopularHorse(horse, horses)
+                    if (danger && danger.score >= 3 && popular) {
+                      return (
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold">
+                          ⚠️ 危険人気
+                        </span>
+                      )
+                    }
+                    return null
+                  })()}
                   {horse.jockey_course_race_count != null && (
                     <span className="text-xs px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600 font-medium">
                       コース勝率{horse.jockey_course_win_rate}%・複{horse.jockey_course_top3_rate}%({horse.jockey_course_race_count}走)
@@ -176,6 +195,17 @@ export function HistoryBasedRanking({ horses }: Props) {
             {/* 過去成績 */}
             {isOpen && (
               <div className="px-4 pb-3 bg-gray-50 border-t border-gray-100">
+                {(() => {
+                  const danger = dangerMap.get(horse.horse_name)
+                  if (!danger || danger.flags.length === 0) return null
+                  return (
+                    <div className="pt-2 pb-1">
+                      <p className="text-xs text-red-600 font-medium">
+                        ⚠️ リスク要因: {danger.flags.join('・')}（スコア: {danger.score}）
+                      </p>
+                    </div>
+                  )
+                })()}
                 {horse.recent_results.length === 0 ? (
                   <p className="text-xs text-gray-400 py-2">過去データなし</p>
                 ) : (

@@ -74,10 +74,23 @@ def parse_shutuba(race_id: str) -> dict | None:
         horse_weight        = int(hw_m.group(1)) if hw_m else None
         horse_weight_change = int(hw_m.group(2)) if hw_m else None
 
+        odds_s       = cell(9)
+        popularity_s = cell(10)
+
         try:
             weight_carried = float(weight_car_s) if weight_car_s else None
         except ValueError:
             weight_carried = None
+
+        try:
+            odds = float(odds_s) if odds_s and odds_s not in ("-", "") else None
+        except ValueError:
+            odds = None
+
+        try:
+            popularity = int(popularity_s) if popularity_s and popularity_s not in ("-", "") else None
+        except ValueError:
+            popularity = None
 
         if not horse_name:
             continue
@@ -91,6 +104,8 @@ def parse_shutuba(race_id: str) -> dict | None:
             "weight_carried":      weight_carried,
             "horse_weight":        horse_weight,
             "horse_weight_change": horse_weight_change,
+            "odds":                odds,
+            "popularity":          popularity,
         })
 
     return {

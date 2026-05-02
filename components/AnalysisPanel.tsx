@@ -8,6 +8,7 @@ interface Props {
   isUpcoming?: boolean
   horses?: HorseWithHistory[]
   weather?: WeatherResult | null
+  onStreamComplete?: (rawText: string) => void
 }
 
 interface PredictionCard {
@@ -67,21 +68,22 @@ function renderMarkdown(text: string) {
   })
 }
 
-export function AnalysisPanel({ raceId, isUpcoming = false, horses, weather }: Props) {
+export function AnalysisPanel({ raceId, isUpcoming = false, horses, weather, onStreamComplete }: Props) {
   const [rawText, setRawText]     = useState('')
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState<string | null>(null)
   const [cards, setCards]         = useState<PredictionCard[]>([])
   const [analysisText, setAnalysisText] = useState('')
 
-  // ストリーム完了後に [TOP3] ブロックをパース
+  // ストリーム完了後に [TOP3] ブロックをパース + 親へ通知
   useEffect(() => {
     if (!loading && rawText) {
       const { cards: parsed, rest } = parseTop3(rawText)
       setCards(parsed)
       setAnalysisText(rest)
+      onStreamComplete?.(rawText)
     }
-  }, [loading, rawText])
+  }, [loading, rawText, onStreamComplete])
 
   const generate = useCallback(async () => {
     setLoading(true)

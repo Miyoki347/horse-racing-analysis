@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     )
   )
 
-  let allRaw: Raw[] = batches.flatMap((b) => (b.data ?? []) as Raw[])
+  let allRaw: Raw[] = batches.flatMap((b) => (b.data ?? []) as unknown as Raw[])
 
   // グレードフィルター
   const gradeList = GRADE_FILTERS[grade]
