@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react'
 import { AnalysisPanel } from './AnalysisPanel'
 import { BettingPatternCard } from './BettingPatternCard'
+import { TrifectaButtons } from './TrifectaButtons'
 import type { HorseWithHistory } from '@/types/upcoming'
 import type { WeatherResult } from '@/lib/weather'
 
@@ -33,6 +34,13 @@ export function AnalysisBettingSection({ raceId, horses, weather }: Props) {
           weather={weather}
           onStreamComplete={handleStreamComplete}
         />
+      </div>
+
+      {/* 3連単・3連複予想 */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <h2 className="text-base font-semibold text-gray-800 mb-1">🎯 3連単 / 3連複予想</h2>
+        <p className="text-xs text-gray-400 mb-4">タイム指数・複勝確率・ローテーションを根拠にした着順・組み合わせ予想</p>
+        <TrifectaButtons raceId={raceId} horses={horses} />
       </div>
 
       {/* 馬券の買い方3パターン */}
