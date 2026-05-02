@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const FASTAPI = process.env.FASTAPI_URL ?? 'http://localhost:8000'
+const FASTAPI = process.env.FASTAPI_URL ?? 'http://127.0.0.1:8000'
 
 export async function POST(
   _req: NextRequest,
@@ -11,7 +11,7 @@ export async function POST(
   try {
     res = await fetch(`${FASTAPI}/refresh-entries/${race_id}`, { method: 'POST' })
   } catch {
-    return NextResponse.json({ detail: 'FastAPI サーバーに接続できません (localhost:8000)' }, { status: 503 })
+    return NextResponse.json({ detail: 'この機能はローカル環境でのみ利用できます（uvicorn を起動してください）' }, { status: 503 })
   }
   const text = await res.text()
   let json: unknown

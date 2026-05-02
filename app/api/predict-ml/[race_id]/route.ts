@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const FASTAPI_URL = process.env.FASTAPI_URL ?? 'http://localhost:8000'
+const FASTAPI_URL = process.env.FASTAPI_URL ?? 'http://127.0.0.1:8000'
 
 export async function POST(
   _req: NextRequest,
@@ -25,7 +25,7 @@ export async function POST(
     return NextResponse.json(data)
   } catch {
     return NextResponse.json(
-      { error: 'FastAPI サーバーに接続できません。uvicorn api.main:app を起動してください。' },
+      { error: 'この機能はローカル環境でのみ利用できます（uvicorn を起動してください）' },
       { status: 503 },
     )
   }
