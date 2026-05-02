@@ -7,6 +7,7 @@ import { WeatherCard } from '@/components/WeatherCard'
 import { fetchWeatherForecast } from '@/lib/weather'
 import { MLPredictButton } from '@/components/MLPredictButton'
 import { AnalysisBettingSection } from '@/components/AnalysisBettingSection'
+import { RefreshEntriesButton } from '@/components/RefreshEntriesButton'
 import type { HorseWithHistory, UpcomingEntry } from '@/types/upcoming'
 import type { WeatherResult } from '@/lib/weather'
 
@@ -176,6 +177,10 @@ export default async function UpcomingRacePage({ params }: PageProps) {
             <div><span className="text-xs text-gray-400 block">開催日</span>{race.race_date}</div>
             <div><span className="text-xs text-gray-400 block">会場</span>{race.course}</div>
             <div><span className="text-xs text-gray-400 block">距離・種別</span>{race.track_type} {race.distance}m</div>
+          </div>
+          <div className="mt-4 pt-3 border-t border-gray-100">
+            <RefreshEntriesButton raceId={race_id} />
+            <p className="mt-1 text-xs text-gray-400">取消・乗り替わりなど最新の出馬表に更新します</p>
           </div>
         </div>
 
